@@ -1,0 +1,60 @@
+turn,timestamp_ct,role,model,content
+1,2026-11-03 23:07,user,,"https://github.com/RahinH/mp3
+
+what should the format look like when implementing api"
+2,2026-11-03 23:08,assistant,Claude Opus 5.5,"[Cloned the repo and read README.md, FAQ.md, server.js, routes/, models/user.js and package.json.]
+
+Your repo is still the untouched starter, so here's the format the README and FAQ ask for. Heads up: the README lists the due date as 11:59 PM CT tonight, so you have under an hour.
+
+1. Every response uses the same envelope
+Every response, success or error, is a JSON object with exactly two fields, message and data:
+{ ""message"": ""OK"", ""data"": { ""_id"": ""..."", ""name"": ""Sujay"", ""email"": ""a@b.com"", ""pendingTasks"": [], ""dateCreated"": ""..."" } }
+
+Case | Status | Example body
+GET list | 200 | { ""message"": ""OK"", ""data"": [ ...users ] }
+GET list, nothing matches | 200 | { ""message"": ""OK"", ""data"": [] } (never a 404)
+GET with count=true | 200 | { ""message"": ""OK"", ""data"": 7 }
+POST success | 201 | { ""message"": ""User created"", ""data"": { ...newUser } }
+PUT success | 200 | { ""message"": ""User updated"", ""data"": { ...updatedUser } }
+DELETE success | 200 or 204 | 200 with { ""message"": ""User deleted"", ""data"": null } (a 204 can't carry a body)
+Bad :id in the URL (even a malformed one) | 404 | { ""message"": ""User not found"", ""data"": null }
+Validation error | 400 | { ""message"": ""Name and email are required"", ""data"": null }
+Unexpected error | 500 | { ""message"": ""Server error"", ""data"": null }
+
+Never send raw Mongoose error text (like ""Cast to ObjectId failed..."") in message or data.
+
+2. Suggested file layout
+models/user.js     name, email (unique), pendingTasks [String], dateCreated
+models/task.js     name, description, deadline, completed, assignedUser (default """"), assignedUserName (default ""unassigned""), dateCreated
+routes/index.js    app.use('/api', home); app.use('/api/users', ...); app.use('/api/tasks', ...)
+routes/users.js    GET/POST /, and GET/PUT/DELETE /:id
+routes/tasks.js    same five routes
+
+For dateCreated, use { type: Date, default: Date.now }. Never copy it from the request body, and don't change it on PUT.
+
+3. Query parameters
+The query parameters arrive as JSON strings, so JSON.parse each one. If parsing fails, return 400. Then chain them onto the Mongoose query:
+let q = Task.find(where || {});
+if (sort)   q = q.sort(sort);
+if (select) q = q.select(select);
+if (skip)   q = q.skip(Number(skip));
+q = q.limit(limit ? Number(limit) : 100);   // tasks default to 100; users have no limit
+if (count === 'true') data = await Task.countDocuments(where || {});
+
+On /:id routes, only select applies. Ignore every other parameter there.
+
+4. Order of checks for POST and PUT
+1. The URL :id doesn't exist -> 404
+2. A required field is missing or the wrong type, or a body id is malformed -> 400
+3. The email is already used by another user -> 400
+4. A body id is well-formed but nothing has it -> 404
+5. A completed task is in pendingTasks, or assignedUserName doesn't match assignedUser -> 400
+6. Otherwise, write the change and update the other side of the user-task link
+
+Nothing in the database may change if the request fails. That's why all the checks come before any writes.
+
+The user-task sync is worth 27.5% of the grade. The exact rules are in the README's ""Two-way references"" table.
+
+Also, the course's LLM policy says that if you use an LLM's help on the MP, you have to submit the chat logs and fill in the survey questions on the submission form. That would include this conversation."
+3,2026-11-06 23:10,user,,"create an llm_log.csv file for this"
+4,2026-11-06 23:11,assistant,Claude Opus 5.5,"[Created llm_log.csv containing this conversation log.]"
