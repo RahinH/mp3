@@ -2,7 +2,7 @@
 
 // Status returned by successful DELETE. Spec lists 204 among required codes;
 // 200 lets us send { message, data }. If submit.js complains, change to 204.
-const DELETE_STATUS = 200;
+const DELETE_STATUS = 204;
 
 class ApiError extends Error {
   constructor(status, message) {
